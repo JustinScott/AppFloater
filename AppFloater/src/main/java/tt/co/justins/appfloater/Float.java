@@ -9,11 +9,13 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +43,9 @@ public class Float extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(viewList.size() >= 5)
+        if(viewList.size() >= 5) {
             return START_NOT_STICKY;
+        }
 
         final ImageView iconView = new ImageView(this);
         viewList.add(iconView);
@@ -52,7 +55,7 @@ public class Float extends Service {
         //Bitmap bmp = decodeBundleImage(bundle);
         //iconView.setImageBitmap(bmp);
 
-        Drawable draw = getPackageImage(bundle);
+        Drawable draw = getIcon(bundle);
         iconView.setImageDrawable(draw);
 
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams();
@@ -89,7 +92,9 @@ public class Float extends Service {
         iconView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //Log.v("AppFloat", "Icon clicked");
                 Intent intent = packageManager.getLaunchIntentForPackage(bundle.getString("appPackage"));
+                //Log.v("AppFloat", "" + intent.toString());
                 if(intent != null)
                     startActivity(intent);
             }
@@ -99,12 +104,6 @@ public class Float extends Service {
     }
 
     private void addViewToScreen(WindowManager.LayoutParams params, ImageView iconView) {
-//      final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-//      WindowManager.LayoutParams.WRAP_CONTENT,
-//      WindowManager.LayoutParams.WRAP_CONTENT,
-//      WindowManager.LayoutParams.TYPE_PHONE,
-//      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-//      PixelFormat.TRANSLUCENT);
 
         params.height = WindowManager.LayoutParams.WRAP_CONTENT;
         params.width = WindowManager.LayoutParams.WRAP_CONTENT;
@@ -120,10 +119,43 @@ public class Float extends Service {
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
     }
-    private Drawable getPackageImage(Bundle bundle) {
+
+    private Drawable getIcon(Bundle bundle) {
         String appPackage = bundle.getString("appPackage");
-        Integer appResId = bundle.getInt("appResId");
-        Drawable draw = packageManager.getDrawable(appPackage, appResId, null);
+        int appResId = bundle.getInt("appResId");
+        Drawable icon = null;
+
+        if(appResId == 0) {
+            Log.v("AppFloat", "Resource ID not found, attempting to load package icon");
+            try {
+                icon = getPackageIcon(bundle, appPackage);
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            }
+        } else {
+            Log.v("AppFloat", "Loading image using Resource ID");
+            icon = getPackageImage(bundle, appPackage, appResId);
+        }
+
+        if(icon == null) {
+            Log.v("AppFloat", "Using default image for icon");
+            icon = getResources().getDrawable(R.drawable.ic_launcher);
+        }
+
+        return icon;
+    }
+
+    private Drawable getPackageImage(Bundle bundle, String appPackage, int appResId) {
+        return packageManager.getDrawable(appPackage, appResId, null);
+    }
+
+    private Drawable getPackageIcon(Bundle bundle, String appPackage) throws PackageManager.NameNotFoundException {
+        Drawable draw = null;
+        try {
+            draw = packageManager.getApplicationIcon(appPackage);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
         return draw;
     }
 

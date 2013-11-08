@@ -7,16 +7,19 @@
     android:gravity="center_horizontal"
     tools:context=".MainActivity"
     tools:ignore="MergeRootFrame" >
-    <Button
-        android:id="@+id/start"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:layout_marginTop="50dp"
-        android:text="Start Service"/>
+
     <Button
         android:id="@+id/stop"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:layout_marginTop="50dp"
+        android:layout_margin="10dp"
         android:text="Stop Service"/>
+
+    <ListView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="40dp"
+        android:id="@+id/listView"
+        android:layout_gravity="center_horizontal"
+        android:fadeScrollbars="false"/>
 </LinearLayout>
