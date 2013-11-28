@@ -1,3 +1,4 @@
 /build
 AppFloater.iml
 build.gradle
+release.keystore

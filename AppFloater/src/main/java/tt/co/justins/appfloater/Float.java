@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -20,6 +22,8 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.transform.dom.DOMResult;
+
 /**
  * Created by Justin on 10/31/13.
  */
@@ -28,6 +32,20 @@ public class Float extends Service {
     List<ImageView> viewList = new ArrayList<ImageView>();
     WindowManager windowManager;
     PackageManager packageManager;
+
+    class IconHolder {
+        public ImageView view;
+        public Drawable defaultIcon;
+        public Drawable statusIcon;
+        public int statusCount;
+
+        IconHolder(ImageView view, Drawable baseIcon) {
+            this.view = view;
+            this.defaultIcon = baseIcon;
+            this.statusIcon = baseIcon;
+            this.statusCount = 0;
+        }
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -57,6 +75,9 @@ public class Float extends Service {
 
         Drawable draw = getIcon(bundle);
         iconView.setImageDrawable(draw);
+
+        IconHolder iconHolder = new IconHolder(iconView, draw);
+        iconView.setTag(iconHolder);
 
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams();
         addViewToScreen(params, iconView);
@@ -92,13 +113,20 @@ public class Float extends Service {
         iconView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Log.v("AppFloat", "Icon clicked");
                 Intent intent = packageManager.getLaunchIntentForPackage(bundle.getString("appPackage"));
-                //Log.v("AppFloat", "" + intent.toString());
                 if(intent != null)
                     startActivity(intent);
-            }
+                }
         });
+
+//        iconView.setOnLongClickListener(new View.OnLongClickListener() {
+//            @Override
+//            public boolean onLongClick(View v) {
+//                IconHolder holder = (IconHolder) v.getTag();
+//                updateIconStatus(holder, ++holder.statusCount);
+//                return false;
+//            }
+//        });
 
         return START_NOT_STICKY;
     }
@@ -156,6 +184,63 @@ public class Float extends Service {
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
+        return draw;
+    }
+
+    private void updateIconStatus(IconHolder holder, int x) {
+        Drawable statusIcon;
+
+        Log.d("AppFloat", "updateIcon position: " + x);
+        switch(x) {
+            case 1:
+                statusIcon = getResources().getDrawable(R.drawable.one);
+                break;
+            case 2:
+                statusIcon = getResources().getDrawable(R.drawable.two);
+                break;
+            case 3:
+                statusIcon = getResources().getDrawable(R.drawable.three);
+                break;
+            case 4:
+                statusIcon =  getResources().getDrawable(R.drawable.four);
+                break;
+            case 5:
+                statusIcon = getResources().getDrawable(R.drawable.five);
+                break;
+            case 6:
+                statusIcon = getResources().getDrawable(R.drawable.six);
+                break;
+            case 7:
+                statusIcon = getResources().getDrawable(R.drawable.seven);
+                break;
+            case 8:
+                statusIcon = getResources().getDrawable(R.drawable.eight);
+                break;
+            case 9:
+                statusIcon = getResources().getDrawable(R.drawable.nine);
+                break;
+            default:
+                statusIcon = getResources().getDrawable(R.drawable.nineplus);
+        }
+
+        holder.statusCount = x;
+        holder.statusIcon = mergeBitmap(holder.defaultIcon, statusIcon);
+        holder.view.setImageDrawable(holder.statusIcon);
+    }
+
+    private Drawable mergeBitmap(Drawable base, Drawable status) {
+        Bitmap bitmap = Bitmap.createBitmap(base.getIntrinsicWidth(), base.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bitmap);
+
+        int top = base.getIntrinsicHeight() - status.getIntrinsicHeight();
+
+        base.setBounds(0, 0, base.getIntrinsicWidth(), base.getIntrinsicHeight());
+        status.setBounds(0, 70, 30, 100);
+
+        base.draw(c);
+        status.draw(c);
+
+        Drawable draw = new BitmapDrawable(getResources(), bitmap);
         return draw;
     }
 

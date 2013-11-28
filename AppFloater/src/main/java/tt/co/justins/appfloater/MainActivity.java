@@ -35,19 +35,6 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        Button startButton = (Button) findViewById(R.id.start);
-//        startButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Intent intent = new Intent(MainActivity.this, Float.class);
-//                //intent.putExtra("appIcon", byteArray);
-//                intent.putExtra("appResId", R.drawable.ic_launcher);
-//                intent.putExtra("appPackage", getApplicationContext().getPackageName());
-//                startService(intent);
-//                finish();
-//            }
-//        });
-
         Button stopButton = (Button) findViewById(R.id.stop);
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
