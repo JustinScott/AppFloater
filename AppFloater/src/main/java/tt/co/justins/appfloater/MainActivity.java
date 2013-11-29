@@ -39,7 +39,7 @@ public class MainActivity extends ActionBarActivity {
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopService(new Intent(MainActivity.this, Float.class));
+                stopService(new Intent(MainActivity.this, FloatService.class));
             }
         });
 
@@ -67,7 +67,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void floatApp(String packageName, int resourceId) {
-        Intent intent = new Intent(MainActivity.this, Float.class);
+        Intent intent = new Intent(MainActivity.this, FloatService.class);
         if(resourceId != 0)
             intent.putExtra("appResId", resourceId);
         intent.putExtra("appPackage", packageName);

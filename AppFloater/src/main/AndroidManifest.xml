@@ -24,7 +24,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="tt.co.justins.appfloater.Float" />
+        <service android:name="tt.co.justins.appfloater.FloatService" />
     </application>
 
 </manifest>

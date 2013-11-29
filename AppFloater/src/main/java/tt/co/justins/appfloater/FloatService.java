@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -27,29 +28,37 @@ import javax.xml.transform.dom.DOMResult;
 /**
  * Created by Justin on 10/31/13.
  */
-public class Float extends Service {
+public class FloatService extends Service {
 
     List<ImageView> viewList = new ArrayList<ImageView>();
     WindowManager windowManager;
     PackageManager packageManager;
 
+    Binder binder = new Floatbinder();
+
     class IconHolder {
         public ImageView view;
         public Drawable defaultIcon;
         public Drawable statusIcon;
-        public int statusCount;
+        public int statusId;
 
         IconHolder(ImageView view, Drawable baseIcon) {
             this.view = view;
             this.defaultIcon = baseIcon;
             this.statusIcon = baseIcon;
-            this.statusCount = 0;
+            this.statusId = 0;
+        }
+    }
+
+    public class Floatbinder extends Binder {
+        FloatService getService() {
+            return FloatService.this;
         }
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return binder;
     }
 
     @Override
@@ -80,7 +89,8 @@ public class Float extends Service {
         iconView.setTag(iconHolder);
 
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams();
-        addViewToScreen(params, iconView);
+        setWindowParams(params);
+        windowManager.addView(iconView, params);
 
         iconView.setOnTouchListener(new View.OnTouchListener() {
             private WindowManager.LayoutParams paramsF = params;
@@ -88,36 +98,49 @@ public class Float extends Service {
             private int initialY;
             private float initialTouchX;
             private float initialTouchY;
+            private float MIN_DISTANCE = 10.0f;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
+                        Log.d("AppFloat", "Action Down");
                         initialX = paramsF.x;
                         initialY = paramsF.y;
                         initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
-                        break;
+                        return false;
                     case MotionEvent.ACTION_MOVE:
+                        Log.d("AppFloat", "Action Move");
                         paramsF.x = initialX + (int) (event.getRawX() - initialTouchX);
                         paramsF.y = initialY + (int) (event.getRawY() - initialTouchY);
                         windowManager.updateViewLayout(iconView, paramsF);
-                        break;
+                        return false;
+                    case MotionEvent.ACTION_UP:
+                        Log.d("AppFloat", "Action Up");
+                        Log.d("AppFloat", "DistanceX: " + Math.abs(initialTouchX - event.getRawX()));
+                        Log.d("AppFloat", "DistanceY: " + Math.abs(initialTouchY - event.getRawY()));
+                        if((Math.abs(initialTouchX - event.getRawX()) <= MIN_DISTANCE) && (Math.abs(initialTouchY - event.getRawY()) <= MIN_DISTANCE)) {
+                            Log.d("AppFloat", "Click Detected");
+                            startApp(bundle);
+                        }
                     default:
+                        Log.d("AppFloat", "Action Default");
                         break;
                 }
                 return false;
             }
+
         });
 
-        iconView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = packageManager.getLaunchIntentForPackage(bundle.getString("appPackage"));
-                if(intent != null)
-                    startActivity(intent);
-                }
-        });
+//        iconView.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Intent intent = packageManager.getLaunchIntentForPackage(bundle.getString("appPackage"));
+//                if(intent != null)
+//                    startActivity(intent);
+//                }
+//        });
 
 //        iconView.setOnLongClickListener(new View.OnLongClickListener() {
 //            @Override
@@ -131,8 +154,14 @@ public class Float extends Service {
         return START_NOT_STICKY;
     }
 
-    private void addViewToScreen(WindowManager.LayoutParams params, ImageView iconView) {
+    private void startApp(Bundle bundle) {
+        Intent intent = packageManager.getLaunchIntentForPackage(bundle.getString("appPackage"));
+            if(intent != null) {
+                    startActivity(intent);
+            }
+    }
 
+    private void setWindowParams(WindowManager.LayoutParams params) {
         params.height = WindowManager.LayoutParams.WRAP_CONTENT;
         params.width = WindowManager.LayoutParams.WRAP_CONTENT;
         params.type = WindowManager.LayoutParams.TYPE_PHONE;
@@ -140,8 +169,6 @@ public class Float extends Service {
         params.format = PixelFormat.TRANSLUCENT;
         params.gravity = Gravity.TOP | Gravity.LEFT;
         params.y = dpToPx(100) * viewList.size();
-
-        windowManager.addView(iconView, params);
     }
 
     private int dpToPx(int dp) {
@@ -187,11 +214,16 @@ public class Float extends Service {
         return draw;
     }
 
-    private void updateIconStatus(IconHolder holder, int x) {
-        Drawable statusIcon;
+    public void updateIconStatus(int statusId) {
+        updateIconStatus(statusId, 0);
+    }
 
-        Log.d("AppFloat", "updateIcon position: " + x);
-        switch(x) {
+    public void updateIconStatus(int statusId, int iconArrayIndex) {
+        Drawable statusIcon;
+        IconHolder holder = (IconHolder) viewList.get(iconArrayIndex).getTag();
+
+        Log.d("AppFloat", "updateIcon position: " + statusId);
+        switch(statusId) {
             case 1:
                 statusIcon = getResources().getDrawable(R.drawable.one);
                 break;
@@ -223,7 +255,7 @@ public class Float extends Service {
                 statusIcon = getResources().getDrawable(R.drawable.nineplus);
         }
 
-        holder.statusCount = x;
+        holder.statusId = statusId;
         holder.statusIcon = mergeBitmap(holder.defaultIcon, statusIcon);
         holder.view.setImageDrawable(holder.statusIcon);
     }
