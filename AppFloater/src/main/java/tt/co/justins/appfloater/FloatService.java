@@ -16,14 +16,11 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.Toast;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.xml.transform.dom.DOMResult;
 
 /**
  * Created by Justin on 10/31/13.
@@ -92,13 +89,17 @@ public class FloatService extends Service {
         setWindowParams(params);
         windowManager.addView(iconView, params);
 
+        ViewConfiguration vc = ViewConfiguration.get(iconView.getContext());
+        final int mScaledTouchSlop = vc.getScaledTouchSlop();
+        final int mLongPressTimeOut = vc.getLongPressTimeout();
+        final int mTapTimeOut = vc.getTapTimeout();
+
         iconView.setOnTouchListener(new View.OnTouchListener() {
             private WindowManager.LayoutParams paramsF = params;
             private int initialX;
             private int initialY;
             private float initialTouchX;
             private float initialTouchY;
-            private float MIN_DISTANCE = 10.0f;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -120,9 +121,14 @@ public class FloatService extends Service {
                         Log.d("AppFloat", "Action Up");
                         Log.d("AppFloat", "DistanceX: " + Math.abs(initialTouchX - event.getRawX()));
                         Log.d("AppFloat", "DistanceY: " + Math.abs(initialTouchY - event.getRawY()));
-                        if((Math.abs(initialTouchX - event.getRawX()) <= MIN_DISTANCE) && (Math.abs(initialTouchY - event.getRawY()) <= MIN_DISTANCE)) {
-                            Log.d("AppFloat", "Click Detected");
-                            startApp(bundle);
+                        Log.d("AppFloat", "elapsed gesture time: " + (event.getEventTime() - event.getDownTime()));
+                        if((Math.abs(initialTouchX - event.getRawX()) <= mScaledTouchSlop) && (Math.abs(initialTouchY - event.getRawY()) <= mScaledTouchSlop)) {
+                            if((event.getEventTime() - event.getDownTime()) < mTapTimeOut ) {
+                                Log.d("AppFloat", "Click Detected");
+                                startApp(bundle);
+                            } else if((event.getEventTime() - event.getDownTime()) >= mLongPressTimeOut) {
+                                Log.d("AppFloat", "Long Click Detected");
+                            }
                         }
                     default:
                         Log.d("AppFloat", "Action Default");
@@ -132,25 +138,6 @@ public class FloatService extends Service {
             }
 
         });
-
-//        iconView.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Intent intent = packageManager.getLaunchIntentForPackage(bundle.getString("appPackage"));
-//                if(intent != null)
-//                    startActivity(intent);
-//                }
-//        });
-
-//        iconView.setOnLongClickListener(new View.OnLongClickListener() {
-//            @Override
-//            public boolean onLongClick(View v) {
-//                IconHolder holder = (IconHolder) v.getTag();
-//                updateIconStatus(holder, ++holder.statusCount);
-//                return false;
-//            }
-//        });
-
         return START_NOT_STICKY;
     }
 
