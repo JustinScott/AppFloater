@@ -1,49 +1,66 @@
 package tt.co.justins.appfloater;
 
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.os.Build;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class MainActivity extends ActionBarActivity {
+    FloatService mService;
+    boolean mbound = false;
+
+    SharedPreferences mPreferences;
+    Set<String> packageNameSet;
+    List<String> appList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Intent intent = new Intent(MainActivity.this, FloatService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+
         Button stopButton = (Button) findViewById(R.id.stop);
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopService(new Intent(MainActivity.this, FloatService.class));
+                if(mbound) {
+                    Log.d("AppFloater", "Calling remove icons on service");
+                    mService.removeIconsFromScreen();
+                } else {
+                    Log.d("AppFloater", "Service isn't bound, can't call remove icons");
+                }
             }
         });
 
-        final List<String> appList = getAppList();
+        appList = getAppList();
+        packageNameSet = new HashSet<String>();
 
         ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> rAppList = am.getRunningAppProcesses();
@@ -58,20 +75,76 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 floatApp(appList.get(position));
+                packageNameSet.add(appList.get(position));
             }
         });
+
+        mPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
     }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        boolean savedApps = false;
+        savedApps = mPreferences.getBoolean("pref_save", savedApps);
+
+        if(mbound) {
+            if (savedApps) {
+                Log.d("AppFloater", "Clearing pref list");
+                mService.clearPrefPackageList();
+                Log.d("AppFloater", "Saving icons to prefs");
+                mService.saveIconsToPref();
+            }
+        } else {
+            Log.d("AppFloater", "onStop called, but service isn't bound");
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d("AppFloater", "Activity onDestroy called");
+        if(mbound) {
+            Log.d("AppFloater", "Unbinding from service");
+            unbindService(mConnection);
+            mbound = false;
+        }
+    }
+
+    private ServiceConnection mConnection =  new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d("AppFloater", "Connected to service");
+            mService = ((FloatService.FloatBinder) service).getService();
+            mbound = true;
+
+            boolean savedApps = false;
+            savedApps = mPreferences.getBoolean("pref_save", savedApps);
+
+            if (savedApps) {
+                Log.d("AppFloater", "Floating saved preference apps");
+                mService.floatSavedApps();
+            } else {
+                Log.d("AppFloater", "Not floating saved preference apps");
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d("AppFloat", "Disconnected from service");
+            mbound = false;
+        }
+    };
 
     private void floatApp(String packageName) {
         floatApp(packageName, 0);
     }
 
     private void floatApp(String packageName, int resourceId) {
-        Intent intent = new Intent(MainActivity.this, FloatService.class);
-        if(resourceId != 0)
-            intent.putExtra("appResId", resourceId);
-        intent.putExtra("appPackage", packageName);
-        startService(intent);
+        if(mbound) {
+            mService.floatApp(packageName, resourceId);
+        }
     }
 
     private List<String> getAppList() {
@@ -112,9 +185,12 @@ public class MainActivity extends ActionBarActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         switch (item.getItemId()) {
             case R.id.action_settings:
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
+                return true;
+            case R.id.about:
                 return true;
         }
         return super.onOptionsItemSelected(item);
     }
-
 }

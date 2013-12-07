@@ -4,5 +4,13 @@
     <string name="app_name">App Floater</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="about">About</string>
+    <string name="title_activity_settings">Settings</string>
+    <string name="pref_save">Save Floating Apps</string>
+    <string name="pref_save_summ">Save the apps you are floating when the app closes, and automatically float those apps when you start AppFloater</string>
+    <string name="pref_phone_start">Launch on phone boot</string>
+    <string name="pref_phone_start_summ">AppFloater will automatically start when the phone is powered on</string>
+    <string name="pref_max_icons">Max icons</string>
+    <string name="pref_max_icons_summ">Maximum number of icons that are allowed on the screen</string>
 
 </resources>

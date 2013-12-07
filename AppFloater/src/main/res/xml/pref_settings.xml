@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+        android:key="pref_save"
+        android:title="@string/pref_save"
+        android:summary="@string/pref_save_summ"
+        android:defaultValue="true" />
+    <PreferenceCategory
+        android:title="Not Implemented Yet">
+        <CheckBoxPreference
+            android:key="pref_phone_start"
+            android:title="@string/pref_phone_start"
+            android:summary="@string/pref_phone_start_summ"
+            android:defaultValue="false" />
+        <Preference
+            android:key="pref_max_icons"
+            android:title="@string/pref_max_icons"
+            android:summary="@string/pref_max_icons_summ"
+            android:defaultValue="5"
+            android:selectable="false"/>
+    </PreferenceCategory>
+</PreferenceScreen>
